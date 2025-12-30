@@ -241,8 +241,30 @@ header h1 {
 }
 
 .sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.source-link, .source-text {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 6px;
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.source-link:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+.source-link::before {
+    content: "📄 ";
 }
 
 /* Markdown formatting styles */
