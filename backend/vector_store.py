@@ -99,20 +99,33 @@ class VectorStore:
         except Exception as e:
             return SearchResults.empty(f"Search error: {str(e)}")
     
-    def _resolve_course_name(self, course_name: str) -> Optional[str]:
-        """Use vector search to find best matching course by name"""
+    def _resolve_course_name(self, course_name: str, max_distance: float = 1.5) -> Optional[str]:
+        """Use vector search to find best matching course by name.
+
+        Args:
+            course_name: The course name to search for
+            max_distance: Maximum L2 distance for a valid match (default 1.5)
+
+        Returns:
+            Matched course title or None if no good match found
+        """
         try:
             results = self.course_catalog.query(
                 query_texts=[course_name],
-                n_results=1
+                n_results=1,
+                include=["documents", "metadatas", "distances"]
             )
-            
+
             if results['documents'][0] and results['metadatas'][0]:
-                # Return the title (which is now the ID)
-                return results['metadatas'][0][0]['title']
+                # Check if the match is good enough (low distance = better match)
+                distance = results['distances'][0][0] if results['distances'][0] else float('inf')
+                if distance <= max_distance:
+                    return results['metadatas'][0][0]['title']
+                # Match is too poor - don't return it
+                return None
         except Exception as e:
             print(f"Error resolving course name: {e}")
-        
+
         return None
     
     def _build_filter(self, course_title: Optional[str], lesson_number: Optional[int]) -> Optional[Dict]:
@@ -137,25 +150,28 @@ class VectorStore:
         import json
 
         course_text = course.title
-        
+
         # Build lessons metadata and serialize as JSON string
         lessons_metadata = []
         for lesson in course.lessons:
             lessons_metadata.append({
                 "lesson_number": lesson.lesson_number,
                 "lesson_title": lesson.title,
-                "lesson_link": lesson.lesson_link
+                "lesson_link": lesson.lesson_link or ""  # ChromaDB cannot store None
             })
-        
+
+        # Build metadata dict, filtering out None values (ChromaDB cannot store None)
+        metadata = {
+            "title": course.title,
+            "instructor": course.instructor or "",  # Default to empty string
+            "course_link": course.course_link or "",  # Default to empty string
+            "lessons_json": json.dumps(lessons_metadata),
+            "lesson_count": len(course.lessons)
+        }
+
         self.course_catalog.add(
             documents=[course_text],
-            metadatas=[{
-                "title": course.title,
-                "instructor": course.instructor,
-                "course_link": course.course_link,
-                "lessons_json": json.dumps(lessons_metadata),  # Serialize as JSON string
-                "lesson_count": len(course.lessons)
-            }],
+            metadatas=[metadata],
             ids=[course.title]
         )
     
