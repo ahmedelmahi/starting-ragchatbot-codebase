@@ -6,13 +6,15 @@ from dataclasses import dataclass
 @dataclass
 class ToolExecutionResult:
     """Result of executing tools in a single round"""
+
     updated_messages: List[Dict[str, Any]]
     error: bool = False
     error_message: str = ""
 
+
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
-    
+
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
 
@@ -45,18 +47,17 @@ Provide only the direct answer to what was asked.
     def __init__(self, api_key: str, model: str):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
+
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
         Supports up to MAX_TOOL_ROUNDS sequential tool calls.
@@ -82,10 +83,7 @@ Provide only the direct answer to what was asked.
         messages = [{"role": "user", "content": query}]
 
         # Prepare API call parameters
-        api_params = {
-            **self.base_params,
-            "system": system_content
-        }
+        api_params = {**self.base_params, "system": system_content}
 
         # Add tools if available
         if tools:
@@ -114,16 +112,17 @@ Provide only the direct answer to what was asked.
         api_params["tool_choice"] = {"type": "none"}
         final_response = self.client.messages.create(**api_params)
         return self._extract_text_response(final_response)
-    
+
     def _extract_text_response(self, response) -> str:
         """Extract text content from API response."""
         for content_block in response.content:
-            if hasattr(content_block, 'text') and content_block.text:
+            if hasattr(content_block, "text") and content_block.text:
                 return content_block.text
         return ""
 
-    def _execute_tool_round(self, response, current_messages: List[Dict[str, Any]],
-                            tool_manager) -> ToolExecutionResult:
+    def _execute_tool_round(
+        self, response, current_messages: List[Dict[str, Any]], tool_manager
+    ) -> ToolExecutionResult:
         """
         Execute all tool calls in a single response round.
 
@@ -147,20 +146,21 @@ Provide only the direct answer to what was asked.
             if content_block.type == "tool_use":
                 try:
                     tool_result = tool_manager.execute_tool(
-                        content_block.name,
-                        **content_block.input
+                        content_block.name, **content_block.input
                     )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": content_block.id,
-                        "content": tool_result
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": tool_result,
+                        }
+                    )
                 except Exception as e:
                     # Tool execution failed
                     return ToolExecutionResult(
                         updated_messages=messages,
                         error=True,
-                        error_message=f"Tool execution failed: {str(e)}"
+                        error_message=f"Tool execution failed: {str(e)}",
                     )
 
         # Add tool results as user message

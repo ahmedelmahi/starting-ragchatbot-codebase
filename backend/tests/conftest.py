@@ -1,4 +1,5 @@
 """Shared fixtures for RAG chatbot tests"""
+
 import pytest
 from unittest.mock import MagicMock, Mock
 from dataclasses import dataclass
@@ -18,24 +19,28 @@ def mock_search_results_with_data():
     return SearchResults(
         documents=[
             "MCP stands for Model Context Protocol. It enables AI models to access external tools.",
-            "To install MCP servers, you need to configure them in your settings file."
+            "To install MCP servers, you need to configure them in your settings file.",
         ],
         metadata=[
-            {"course_title": "Introduction to MCP", "lesson_number": 1, "chunk_index": 0},
-            {"course_title": "Introduction to MCP", "lesson_number": 2, "chunk_index": 1}
+            {
+                "course_title": "Introduction to MCP",
+                "lesson_number": 1,
+                "chunk_index": 0,
+            },
+            {
+                "course_title": "Introduction to MCP",
+                "lesson_number": 2,
+                "chunk_index": 1,
+            },
         ],
-        distances=[0.2, 0.4]
+        distances=[0.2, 0.4],
     )
 
 
 @pytest.fixture
 def mock_search_results_empty():
     """Empty SearchResults"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[]
-    )
+    return SearchResults(documents=[], metadata=[], distances=[])
 
 
 @pytest.fixture
@@ -45,7 +50,7 @@ def mock_search_results_with_error():
         documents=[],
         metadata=[],
         distances=[],
-        error="No course found matching 'nonexistent course'"
+        error="No course found matching 'nonexistent course'",
     )
 
 
@@ -115,9 +120,9 @@ def sample_tool_definitions():
                 "properties": {
                     "query": {"type": "string"},
                     "course_name": {"type": "string"},
-                    "lesson_number": {"type": "integer"}
+                    "lesson_number": {"type": "integer"},
                 },
-                "required": ["query"]
-            }
+                "required": ["query"],
+            },
         }
     ]

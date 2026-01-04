@@ -7,6 +7,7 @@ These tests evaluate:
 3. Filter handling (course_name, lesson_number)
 4. Source tracking for UI display
 """
+
 import pytest
 from unittest.mock import MagicMock, patch
 import sys
@@ -21,7 +22,9 @@ from vector_store import SearchResults
 class TestCourseSearchToolExecute:
     """Tests for CourseSearchTool.execute() method"""
 
-    def test_execute_returns_formatted_results_on_success(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_returns_formatted_results_on_success(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute() returns properly formatted results when search succeeds"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
@@ -31,9 +34,7 @@ class TestCourseSearchToolExecute:
 
         # Verify search was called
         mock_vector_store.search.assert_called_once_with(
-            query="What is MCP?",
-            course_name=None,
-            lesson_number=None
+            query="What is MCP?", course_name=None, lesson_number=None
         )
 
         # Verify result contains course context headers
@@ -43,7 +44,9 @@ class TestCourseSearchToolExecute:
         # Verify content is included
         assert "MCP stands for Model Context Protocol" in result
 
-    def test_execute_returns_error_when_course_not_found(self, mock_vector_store, mock_search_results_with_error):
+    def test_execute_returns_error_when_course_not_found(
+        self, mock_vector_store, mock_search_results_with_error
+    ):
         """Test that execute() returns error message when course resolution fails"""
         mock_vector_store.search.return_value = mock_search_results_with_error
 
@@ -53,7 +56,9 @@ class TestCourseSearchToolExecute:
         # Should return the error from SearchResults
         assert "No course found matching 'nonexistent course'" in result
 
-    def test_execute_returns_no_content_message_on_empty_results(self, mock_vector_store, mock_search_results_empty):
+    def test_execute_returns_no_content_message_on_empty_results(
+        self, mock_vector_store, mock_search_results_empty
+    ):
         """Test that execute() returns appropriate message when no results found"""
         mock_vector_store.search.return_value = mock_search_results_empty
 
@@ -62,7 +67,9 @@ class TestCourseSearchToolExecute:
 
         assert "No relevant content found" in result
 
-    def test_execute_passes_course_name_filter_to_vector_store(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_passes_course_name_filter_to_vector_store(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute() correctly passes course_name filter"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = None
@@ -71,12 +78,12 @@ class TestCourseSearchToolExecute:
         tool.execute(query="What is MCP?", course_name="Introduction to MCP")
 
         mock_vector_store.search.assert_called_once_with(
-            query="What is MCP?",
-            course_name="Introduction to MCP",
-            lesson_number=None
+            query="What is MCP?", course_name="Introduction to MCP", lesson_number=None
         )
 
-    def test_execute_passes_lesson_number_filter_to_vector_store(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_passes_lesson_number_filter_to_vector_store(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute() correctly passes lesson_number filter"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = None
@@ -85,12 +92,12 @@ class TestCourseSearchToolExecute:
         tool.execute(query="What is MCP?", lesson_number=1)
 
         mock_vector_store.search.assert_called_once_with(
-            query="What is MCP?",
-            course_name=None,
-            lesson_number=1
+            query="What is MCP?", course_name=None, lesson_number=1
         )
 
-    def test_execute_passes_both_filters_to_vector_store(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_passes_both_filters_to_vector_store(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute() correctly passes both filters"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = None
@@ -99,12 +106,12 @@ class TestCourseSearchToolExecute:
         tool.execute(query="What is MCP?", course_name="MCP Course", lesson_number=2)
 
         mock_vector_store.search.assert_called_once_with(
-            query="What is MCP?",
-            course_name="MCP Course",
-            lesson_number=2
+            query="What is MCP?", course_name="MCP Course", lesson_number=2
         )
 
-    def test_execute_includes_filter_info_in_empty_results_message(self, mock_vector_store, mock_search_results_empty):
+    def test_execute_includes_filter_info_in_empty_results_message(
+        self, mock_vector_store, mock_search_results_empty
+    ):
         """Test that empty results message includes filter context"""
         mock_vector_store.search.return_value = mock_search_results_empty
 
@@ -119,7 +126,9 @@ class TestCourseSearchToolExecute:
 class TestCourseSearchToolSourceTracking:
     """Tests for source tracking in CourseSearchTool"""
 
-    def test_execute_stores_sources_in_last_sources(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_stores_sources_in_last_sources(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute() stores sources for UI retrieval"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson"
@@ -136,8 +145,10 @@ class TestCourseSearchToolSourceTracking:
         """Test source tracking when lesson_number is None in metadata"""
         results = SearchResults(
             documents=["Course overview content"],
-            metadata=[{"course_title": "Test Course", "lesson_number": None, "chunk_index": 0}],
-            distances=[0.1]
+            metadata=[
+                {"course_title": "Test Course", "lesson_number": None, "chunk_index": 0}
+            ],
+            distances=[0.1],
         )
         mock_vector_store.search.return_value = results
         mock_vector_store.get_lesson_link.return_value = None
@@ -149,13 +160,15 @@ class TestCourseSearchToolSourceTracking:
         assert tool.last_sources[0]["text"] == "Test Course"
         assert tool.last_sources[0]["url"] is None
 
-    def test_sources_cleared_on_empty_results(self, mock_vector_store, mock_search_results_empty):
+    def test_sources_cleared_on_empty_results(
+        self, mock_vector_store, mock_search_results_empty
+    ):
         """Test that sources are handled correctly when results are empty"""
         # First search with results
         mock_vector_store.search.return_value = SearchResults(
             documents=["content"],
             metadata=[{"course_title": "Course", "lesson_number": 1, "chunk_index": 0}],
-            distances=[0.1]
+            distances=[0.1],
         )
         mock_vector_store.get_lesson_link.return_value = None
 
@@ -182,9 +195,9 @@ class TestCourseSearchToolFormatting:
             documents=["Content 1", "Content 2"],
             metadata=[
                 {"course_title": "Course A", "lesson_number": 1, "chunk_index": 0},
-                {"course_title": "Course B", "lesson_number": 3, "chunk_index": 1}
+                {"course_title": "Course B", "lesson_number": 3, "chunk_index": 1},
             ],
-            distances=[0.1, 0.2]
+            distances=[0.1, 0.2],
         )
         mock_vector_store.get_lesson_link.return_value = None
 
@@ -200,8 +213,10 @@ class TestCourseSearchToolFormatting:
         """Test formatting when lesson_number is None"""
         results = SearchResults(
             documents=["Course intro content"],
-            metadata=[{"course_title": "Course A", "lesson_number": None, "chunk_index": 0}],
-            distances=[0.1]
+            metadata=[
+                {"course_title": "Course A", "lesson_number": None, "chunk_index": 0}
+            ],
+            distances=[0.1],
         )
         mock_vector_store.get_lesson_link.return_value = None
 
@@ -235,7 +250,9 @@ class TestToolManager:
         assert len(definitions) == 1
         assert definitions[0]["name"] == "search_course_content"
 
-    def test_execute_tool_calls_correct_tool(self, mock_vector_store, mock_search_results_with_data):
+    def test_execute_tool_calls_correct_tool(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that execute_tool correctly dispatches to the right tool"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = None
@@ -255,7 +272,9 @@ class TestToolManager:
 
         assert "Tool 'nonexistent_tool' not found" in result
 
-    def test_get_last_sources_returns_sources_from_search_tool(self, mock_vector_store, mock_search_results_with_data):
+    def test_get_last_sources_returns_sources_from_search_tool(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that get_last_sources retrieves sources from tools"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = "https://example.com"
@@ -270,7 +289,9 @@ class TestToolManager:
         sources = manager.get_last_sources()
         assert len(sources) == 2
 
-    def test_reset_sources_clears_tool_sources(self, mock_vector_store, mock_search_results_with_data):
+    def test_reset_sources_clears_tool_sources(
+        self, mock_vector_store, mock_search_results_with_data
+    ):
         """Test that reset_sources clears sources from all tools"""
         mock_vector_store.search.return_value = mock_search_results_with_data
         mock_vector_store.get_lesson_link.return_value = None

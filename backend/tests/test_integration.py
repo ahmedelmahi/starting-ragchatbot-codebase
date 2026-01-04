@@ -6,6 +6,7 @@ These tests use real components (not mocks) to identify integration issues:
 2. CourseSearchTool with real VectorStore
 3. Full query flow testing
 """
+
 import pytest
 import tempfile
 import shutil
@@ -35,7 +36,7 @@ class TestVectorStoreIntegration:
         return VectorStore(
             chroma_path=temp_chroma_path,
             embedding_model="all-MiniLM-L6-v2",
-            max_results=5
+            max_results=5,
         )
 
     @pytest.fixture
@@ -46,10 +47,22 @@ class TestVectorStoreIntegration:
             course_link="https://example.com/mcp-course",
             instructor="John Doe",
             lessons=[
-                Lesson(lesson_number=1, title="What is MCP?", lesson_link="https://example.com/lesson1"),
-                Lesson(lesson_number=2, title="Installing MCP", lesson_link="https://example.com/lesson2"),
-                Lesson(lesson_number=3, title="Advanced MCP", lesson_link="https://example.com/lesson3"),
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="What is MCP?",
+                    lesson_link="https://example.com/lesson1",
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="Installing MCP",
+                    lesson_link="https://example.com/lesson2",
+                ),
+                Lesson(
+                    lesson_number=3,
+                    title="Advanced MCP",
+                    lesson_link="https://example.com/lesson3",
+                ),
+            ],
         )
 
     @pytest.fixture
@@ -60,23 +73,25 @@ class TestVectorStoreIntegration:
                 content="MCP stands for Model Context Protocol. It allows AI models to interact with external tools and data sources.",
                 course_title=sample_course.title,
                 lesson_number=1,
-                chunk_index=0
+                chunk_index=0,
             ),
             CourseChunk(
                 content="To install MCP, you need to configure your settings.json file with the server definitions.",
                 course_title=sample_course.title,
                 lesson_number=2,
-                chunk_index=1
+                chunk_index=1,
             ),
             CourseChunk(
                 content="Advanced MCP usage includes creating custom tools, handling authentication, and error management.",
                 course_title=sample_course.title,
                 lesson_number=3,
-                chunk_index=2
+                chunk_index=2,
             ),
         ]
 
-    def test_add_and_search_course_content(self, vector_store, sample_course, sample_chunks):
+    def test_add_and_search_course_content(
+        self, vector_store, sample_course, sample_chunks
+    ):
         """Test adding course content and searching it"""
         # Add course metadata and content
         vector_store.add_course_metadata(sample_course)
@@ -89,36 +104,36 @@ class TestVectorStoreIntegration:
         assert len(results.documents) > 0
         assert "MCP" in results.documents[0]
 
-    def test_search_with_course_filter(self, vector_store, sample_course, sample_chunks):
+    def test_search_with_course_filter(
+        self, vector_store, sample_course, sample_chunks
+    ):
         """Test that course name filter works correctly"""
         vector_store.add_course_metadata(sample_course)
         vector_store.add_course_content(sample_chunks)
 
         # Search with course filter
         results = vector_store.search(
-            query="installation",
-            course_name="MCP"  # Partial match should work
+            query="installation", course_name="MCP"  # Partial match should work
         )
 
         assert not results.is_empty()
         # All results should be from the filtered course
         for meta in results.metadata:
-            assert meta['course_title'] == "Introduction to MCP"
+            assert meta["course_title"] == "Introduction to MCP"
 
-    def test_search_with_lesson_filter(self, vector_store, sample_course, sample_chunks):
+    def test_search_with_lesson_filter(
+        self, vector_store, sample_course, sample_chunks
+    ):
         """Test that lesson number filter works correctly"""
         vector_store.add_course_metadata(sample_course)
         vector_store.add_course_content(sample_chunks)
 
         # Search with lesson filter
-        results = vector_store.search(
-            query="MCP",
-            lesson_number=1
-        )
+        results = vector_store.search(query="MCP", lesson_number=1)
 
         # All results should be from lesson 1
         for meta in results.metadata:
-            assert meta['lesson_number'] == 1
+            assert meta["lesson_number"] == 1
 
     def test_course_name_resolution(self, vector_store, sample_course, sample_chunks):
         """Test that fuzzy course name matching works"""
@@ -132,14 +147,15 @@ class TestVectorStoreIntegration:
         resolved = vector_store._resolve_course_name("Introduction")
         assert resolved == "Introduction to MCP"
 
-    def test_search_nonexistent_course_returns_error(self, vector_store, sample_course, sample_chunks):
+    def test_search_nonexistent_course_returns_error(
+        self, vector_store, sample_course, sample_chunks
+    ):
         """Test that searching for nonexistent course returns error"""
         vector_store.add_course_metadata(sample_course)
         vector_store.add_course_content(sample_chunks)
 
         results = vector_store.search(
-            query="test",
-            course_name="Completely Nonexistent Course That Doesn't Match"
+            query="test", course_name="Completely Nonexistent Course That Doesn't Match"
         )
 
         assert results.error is not None
@@ -177,7 +193,7 @@ class TestCourseSearchToolIntegration:
         return VectorStore(
             chroma_path=temp_chroma_path,
             embedding_model="all-MiniLM-L6-v2",
-            max_results=5
+            max_results=5,
         )
 
     @pytest.fixture
@@ -188,13 +204,31 @@ class TestCourseSearchToolIntegration:
             course_link="https://example.com/python",
             instructor="Jane Smith",
             lessons=[
-                Lesson(lesson_number=1, title="Variables", lesson_link="https://example.com/python/1"),
-                Lesson(lesson_number=2, title="Functions", lesson_link="https://example.com/python/2"),
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="Variables",
+                    lesson_link="https://example.com/python/1",
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="Functions",
+                    lesson_link="https://example.com/python/2",
+                ),
+            ],
         )
         chunks = [
-            CourseChunk(content="Python variables store data. Use = for assignment.", course_title="Python Basics", lesson_number=1, chunk_index=0),
-            CourseChunk(content="Functions are defined with def keyword. They organize code.", course_title="Python Basics", lesson_number=2, chunk_index=1),
+            CourseChunk(
+                content="Python variables store data. Use = for assignment.",
+                course_title="Python Basics",
+                lesson_number=1,
+                chunk_index=0,
+            ),
+            CourseChunk(
+                content="Functions are defined with def keyword. They organize code.",
+                course_title="Python Basics",
+                lesson_number=2,
+                chunk_index=1,
+            ),
         ]
 
         vector_store.add_course_metadata(course)
@@ -240,7 +274,7 @@ class TestToolManagerIntegration:
         vector_store = VectorStore(
             chroma_path=temp_chroma_path,
             embedding_model="all-MiniLM-L6-v2",
-            max_results=5
+            max_results=5,
         )
 
         # Add sample data
@@ -248,11 +282,20 @@ class TestToolManagerIntegration:
             title="Test Course",
             course_link="https://example.com/test",
             lessons=[
-                Lesson(lesson_number=1, title="Lesson 1", lesson_link="https://example.com/test/1"),
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="Lesson 1",
+                    lesson_link="https://example.com/test/1",
+                ),
+            ],
         )
         chunks = [
-            CourseChunk(content="Test content about programming concepts.", course_title="Test Course", lesson_number=1, chunk_index=0),
+            CourseChunk(
+                content="Test content about programming concepts.",
+                course_title="Test Course",
+                lesson_number=1,
+                chunk_index=0,
+            ),
         ]
         vector_store.add_course_metadata(course)
         vector_store.add_course_content(chunks)
@@ -267,22 +310,25 @@ class TestToolManagerIntegration:
     def test_execute_search_tool_through_manager(self, tool_manager_with_data):
         """Test executing search tool through manager"""
         result = tool_manager_with_data.execute_tool(
-            "search_course_content",
-            query="programming"
+            "search_course_content", query="programming"
         )
 
         assert "Test Course" in result
 
     def test_sources_available_after_search(self, tool_manager_with_data):
         """Test that sources can be retrieved after search"""
-        tool_manager_with_data.execute_tool("search_course_content", query="programming")
+        tool_manager_with_data.execute_tool(
+            "search_course_content", query="programming"
+        )
         sources = tool_manager_with_data.get_last_sources()
 
         assert len(sources) > 0
 
     def test_reset_sources_works(self, tool_manager_with_data):
         """Test that sources can be reset"""
-        tool_manager_with_data.execute_tool("search_course_content", query="programming")
+        tool_manager_with_data.execute_tool(
+            "search_course_content", query="programming"
+        )
         tool_manager_with_data.reset_sources()
         sources = tool_manager_with_data.get_last_sources()
 
@@ -304,7 +350,7 @@ class TestCourseOutlineToolIntegration:
         vector_store = VectorStore(
             chroma_path=temp_chroma_path,
             embedding_model="all-MiniLM-L6-v2",
-            max_results=5
+            max_results=5,
         )
 
         course = Course(
@@ -312,10 +358,22 @@ class TestCourseOutlineToolIntegration:
             course_link="https://example.com/adv-python",
             instructor="Dr. Expert",
             lessons=[
-                Lesson(lesson_number=1, title="Decorators", lesson_link="https://example.com/adv/1"),
-                Lesson(lesson_number=2, title="Generators", lesson_link="https://example.com/adv/2"),
-                Lesson(lesson_number=3, title="Context Managers", lesson_link="https://example.com/adv/3"),
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="Decorators",
+                    lesson_link="https://example.com/adv/1",
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="Generators",
+                    lesson_link="https://example.com/adv/2",
+                ),
+                Lesson(
+                    lesson_number=3,
+                    title="Context Managers",
+                    lesson_link="https://example.com/adv/3",
+                ),
+            ],
         )
         vector_store.add_course_metadata(course)
         return vector_store
@@ -351,11 +409,7 @@ class TestSearchResultsEdgeCases:
 
     def test_search_results_from_chroma_with_empty_lists(self):
         """Test handling of empty ChromaDB results"""
-        chroma_results = {
-            'documents': [[]],
-            'metadatas': [[]],
-            'distances': [[]]
-        }
+        chroma_results = {"documents": [[]], "metadatas": [[]], "distances": [[]]}
         results = SearchResults.from_chroma(chroma_results)
 
         assert results.is_empty()
@@ -363,11 +417,7 @@ class TestSearchResultsEdgeCases:
 
     def test_search_results_from_chroma_with_none_values(self):
         """Test handling when ChromaDB returns None-like values"""
-        chroma_results = {
-            'documents': None,
-            'metadatas': None,
-            'distances': None
-        }
+        chroma_results = {"documents": None, "metadatas": None, "distances": None}
 
         # This should handle None gracefully
         try:
