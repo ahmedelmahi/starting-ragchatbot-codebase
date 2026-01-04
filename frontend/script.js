@@ -5,7 +5,72 @@ const API_URL = '/api';
 let currentSessionId = null;
 
 // DOM elements
-let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatBtn;
+let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatBtn, themeToggle;
+
+// Theme management
+function initializeTheme() {
+    themeToggle = document.getElementById('themeToggle');
+
+    // Check for saved theme preference or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    } else if (!prefersDark) {
+        document.documentElement.setAttribute('data-theme', 'light');
+    }
+    // Default is dark theme (no data-theme attribute needed)
+
+    // Set up event listeners
+    themeToggle.addEventListener('click', toggleTheme);
+    themeToggle.addEventListener('keydown', handleThemeKeydown);
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            if (e.matches) {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        }
+    });
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+    // Add transitioning class for animation
+    themeToggle.classList.add('transitioning');
+
+    if (newTheme === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+    } else {
+        document.documentElement.setAttribute('data-theme', newTheme);
+    }
+
+    // Save preference
+    localStorage.setItem('theme', newTheme);
+
+    // Update aria-label for accessibility
+    themeToggle.setAttribute('aria-label',
+        newTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+    );
+
+    // Remove transitioning class after animation
+    setTimeout(() => {
+        themeToggle.classList.remove('transitioning');
+    }, 300);
+}
+
+function handleThemeKeydown(e) {
+    // Toggle on Enter or Space key
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleTheme();
+    }
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     courseTitles = document.getElementById('courseTitles');
     newChatBtn = document.getElementById('newChatBtn');
 
+    initializeTheme();
     setupEventListeners();
     createNewSession();
     loadCourseStats();
