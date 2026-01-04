@@ -1,7 +1,7 @@
 """Shared fixtures for RAG chatbot tests"""
 
 import pytest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 import sys
@@ -11,6 +11,128 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from vector_store import SearchResults
+
+
+# ============================================================================
+# API Testing Fixtures
+# ============================================================================
+
+@pytest.fixture
+def mock_rag_system():
+    """Mock RAGSystem for API testing"""
+    mock = MagicMock()
+
+    # Mock session manager
+    mock.session_manager.create_session.return_value = "test-session-123"
+    mock.session_manager.clear_session.return_value = None
+
+    # Mock query method
+    mock.query.return_value = (
+        "MCP stands for Model Context Protocol.",
+        [{"text": "Introduction to MCP, Lesson 1", "url": "https://example.com/lesson1"}]
+    )
+
+    # Mock course analytics
+    mock.get_course_analytics.return_value = {
+        "total_courses": 3,
+        "course_titles": ["Introduction to MCP", "Advanced Claude", "AI Fundamentals"]
+    }
+
+    return mock
+
+
+@pytest.fixture
+def test_app(mock_rag_system):
+    """Create a test FastAPI app without static file mounting"""
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from typing import List, Optional
+
+    # Create fresh app for testing
+    app = FastAPI(title="Course Materials RAG System - Test")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Pydantic models (inline to avoid import issues)
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class SourceItem(BaseModel):
+        text: str
+        url: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[SourceItem]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    class SessionClearRequest(BaseModel):
+        session_id: str
+
+    class SessionClearResponse(BaseModel):
+        success: bool
+        message: str
+
+    # Store mock in app state for access in endpoints
+    app.state.rag_system = mock_rag_system
+
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        try:
+            rag = app.state.rag_system
+            session_id = request.session_id
+            if not session_id:
+                session_id = rag.session_manager.create_session()
+            answer, sources = rag.query(request.query, session_id)
+            return QueryResponse(answer=answer, sources=sources, session_id=session_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        try:
+            rag = app.state.rag_system
+            analytics = rag.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/session/clear", response_model=SessionClearResponse)
+    async def clear_session(request: SessionClearRequest):
+        try:
+            rag = app.state.rag_system
+            rag.session_manager.clear_session(request.session_id)
+            return SessionClearResponse(success=True, message="Session cleared successfully")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/")
+    async def root():
+        return {"status": "ok", "message": "RAG System API"}
+
+    return app
+
+
+@pytest.fixture
+def test_client(test_app):
+    """Create TestClient for API testing"""
+    from starlette.testclient import TestClient
+    return TestClient(test_app)
 
 
 @pytest.fixture
